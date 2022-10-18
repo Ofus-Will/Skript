@@ -1,0 +1,42 @@
+command /msg [<offline player>] [<text>]:
+    aliases: /message
+    trigger:
+        if arg-1 = player:
+            send "&cYou can not message yourself!"
+        else if arg-2 is not set:
+            send "&c/msg <player> <message>"
+        else if arg-1 is not online:
+            send "&cThat player is not online!"
+        else:
+            send "&8(&aTo &2&l%arg-1%&8) &f%arg-2%" to player 
+            send "&8(&aFrom &2&l%player%&8) &f%arg-2%" to arg-1
+            send "&6[SS] &8(&2&l%player% &a⇒ &2&l%arg-1%&8) &f%arg-2%" to {socialspy::*}
+            set {lastMessage::%arg-1%} to player 
+            set {lastMessage::%player%} to arg-1
+
+command /reply [<text>]:
+    aliases: /r 
+    trigger:
+        if arg-1 is set:
+            set {_p} to {lastMessage::%player%}
+            if {_p} is set:
+                send "&8(&aTo &2&l%{_p}%&8) &f%arg-1%" to player 
+                send "&8(&aFrom &2&l%player%&8) &f%arg-1%" to {_p}
+                send "&6[SS] &8(&2&l%player% &a⇒ &2&l%{_p}%&8) &f%arg-1%" to {socialspy::*}
+                set {lastMessage::%{_p}%} to player 
+                set {lastMessage::%player%} to {_p}
+            else:
+                send "&cYou have no one to reply to!"
+        else:
+            send "&c/reply <message>"
+
+command /socialspy:
+    permission: admin.socialspy 
+    permission message: &cPermission denied! 
+    trigger:
+        if {socialspy::*} contains player:
+            remove player from {socialspy::*}
+            send "&cYou have disabeld socialspy!"
+        else:
+            add player to {socialspy::*}
+            send "&aYou have enabled socialspy!"

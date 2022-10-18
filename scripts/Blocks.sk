@@ -1,0 +1,77 @@
+# wool issue, when broken isn't removed from player's placed block variable
+
+command /editmode:
+    permission: admin.editmode 
+    permission message: &cPermission denied!
+    trigger:
+        if {editmode::%player's uuid%} is not set:
+            set {editmode::%player's uuid%} to true
+            loop (integers from 0 to 39):
+                add slot loop-integer of player to {editmode::items::%player's uuid%::*} 
+            clear inventory of player 
+            set gamemode of player to creative
+            send "&aEdit mode entered, inventory saved"
+            while {editmode::%player's uuid%} is set:
+                send action bar "&c&lWARNING: &cYou are in edit mode!" to player
+                wait 1 second 
+        else:
+            clear inventory of player 
+            loop {editmode::items::%player's uuid%::*}:
+                set slot {_n} ? 0 of player to loop-value 
+                add 1 to {_n}
+            delete {editmode::items::%player's uuid%::*} and {editmode::%player's uuid%}
+            set gamemode of player to survival 
+            send "&cYou are no longer in edit mode!"
+            send action bar "" to player
+
+on place:
+    if {editmode::%player's uuid%} is not set:
+        set {_loc} to location of event-block 
+        set {playerStats::placedBlocks::%player's uuid%::%{_loc}%} to {_loc}
+        set tag "tag;Owner" of nbt compound of event-block to player's uuid
+        if player's gamemode != survival:
+            send action bar "&c&lWarning: &cYou are not in edit mode!" to player
+
+on disconnect:
+    set {playerStats::lastOnline::%player's uuid%} to now 
+
+on join:
+    delete {playerStats::lastOnline::%player's uuid%}
+
+every 5 minutes:
+    loop {playerStats::lastOnline::*}:
+        set {_lastSeen} to difference between now and loop-value
+        if {_lastSeen} >= 2 hours:
+            resetBlocks(loop-index)
+
+command /resetblocks [<offline player>]:
+    permission: admin.resetblocks
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is an offline player:
+            if {playerStats::placedBlocks::%arg-1's uuid%::*} is set:
+                resetBlocks(uuid of arg-1)
+                send formatted "&7You have reset &a%arg-1%'s placed blocks" to player if arg-1 != player
+                send formatted "&7Your placed blocks have been &areset" to arg-1 if arg-1 is online
+            else:
+                send "&cThat player has no placed blocks!"
+        else:
+            send "&c/removeblocks <player>"
+            
+function resetBlocks(UUID: string):
+    loop {playerStats::placedBlocks::%{_UUID}%::*}:
+        set block at loop-value to air 
+        if {playerStats::generators::%{_uuid}%::%loop-value%} is set:
+            delete {playerStats::generators::%{_uuid}%::%loop-value%}
+        wait 1 tick
+    delete {playerStats::placedBlocks::%{_UUID}%::*}
+
+on break:
+    set {_loc} to location of event-block 
+    set {_blockOwner} to tag "tag;Owner" of nbt compound of event-block
+    if {_blockOwner} is set:
+        remove {_loc} from {playerStats::placedBlocks::%{_blockOwner}%::*}
+    else if {editmode::%player's uuid%} is not set:
+        cancel event 
+        send "&cYou can only break blocks placed by players!"
+

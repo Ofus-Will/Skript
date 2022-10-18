@@ -1,0 +1,26 @@
+on join:
+    set title of scoreboard of player to "&2&lCashopolis &8| &aSeason 1"
+    updateScoreboard(player)
+
+# updating board for all players to display: correct player count, correct total joisn, correct TPS
+every 3 seconds:
+    loop all players:
+        updateScoreboard(loop-player)
+
+function updateScoreboard(p: player):
+    set {_u} to uuid of {_p}
+    set line 15 of scoreboard of {_p} to ""
+    set line 14 of scoreboard of {_p} to "&2&lPlayer"
+    set line 13 of scoreboard of {_p} to "&8• &fRank: &a%{playerStats::rank::%{_u}%} ? 0%✫"
+    set line 12 of scoreboard of {_p} to "&8• &fPrestige: &a%{playerStats::prestige::%{_u}%} ? 0%"
+    set line 11 of scoreboard of {_p} to "&8• &fBalance: &a%{_p}'s balance ? 0%"
+    set line 10 of scoreboard of {_p} to "&8• &fGenerators: &a%size of {playerStats::generators::%{_u}%::*} ? 0%/%{playerStats::maxGenerators::%{_u}%} ? 0%"
+    set line 9 of scoreboard of {_p} to "&8• &fMultiplier: &a1x"
+    set line 8 of scoreboard of {_p} to ""
+    set line 7 of scoreboard of {_p} to "&2&lServer"
+    set line 6 of scoreboard of {_p} to "&8• &fTPS: &a%tps from last 1 minute%"
+    set line 5 of scoreboard of {_p} to "&8• &fOnline: &a%size of all players%"
+    set line 4 of scoreboard of {_p} to "&8• &fMultiplier: &a1x"
+    set line 3 of scoreboard of {_p} to "&8• &fJoins: &a%size of all offline players ? 0%"
+    set line 2 of scoreboard of {_p} to ""
+    set line 1 of scoreboard of {_p} to "&2cashopolis.minehut.gg"

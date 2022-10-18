@@ -1,0 +1,8 @@
+command /help:
+    aliases: /information
+    trigger:
+        send "" and "&2&lCashopolis"
+        send "" and "&fYou have been given a &agenerator, &frun out of spawn and place it down to start earning money!"
+        send "" and "&fIn order to get access to more generators you must level up via &a/rankup! &fYou can also level up your generators by prestiging!"
+        send "" and "&fPlayers will be out to kill you and steal your money, so make sure to protect your generators with &adefenses. &fYou can buy defenses and other resources via &a/shop!"
+        send "" and "&fYou can upgrade your maximum health via the &aNurse NPC &fat spawn! There are many other NPCs located around the map such as &aThe Worksmith &fand &aThe Enchanter"

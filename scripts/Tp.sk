@@ -1,0 +1,26 @@
+command /tp [<offline player>]:
+    permission: admin.tp 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is set:
+            if arg-1 is online:
+                send "&7You have teleported to &3%arg-1%" to player 
+                teleport player to arg-1 
+            else:
+                send "&cThat player is offline!"
+        else:
+            send "&c/tp <player>"
+
+command /tphere [<offline player>]:
+    permission: admin.tp 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is set:
+            if arg-1 is online:
+                send formatted "&7You have &3%arg-1% &7to your location" to player 
+                teleport arg-1 to player 
+                send "&7You have been teleported to &3%player%" to arg-1
+            else:
+                send "&cThat player is offline!"
+        else:
+            send "&c/tp <player>"

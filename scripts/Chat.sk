@@ -1,0 +1,7 @@
+on chat:
+    if {playerStats::activeTag::%player's uuid%} is set:
+        set {_tag} to "%{playerStats::activeTag::%player's uuid%}% "
+    else:
+        set {_tag} to ""
+
+    set chat format to "%{_tag}%&8[&5P%{playerStats::rank::%player's uuid%} ? 0%&8-&5%{playerStats::rank::%player's uuid%} ? 0%✫&8] %player's prefix% &7%player%: &f%message%"

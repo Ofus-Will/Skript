@@ -1,0 +1,133 @@
+on join:
+    if {playerStats::maxGenerators::%player's uuid%} is not set:
+        set {playerStats::maxGenerators::%player's uuid%} to 1
+    if {playerStats::rank::%player's uuid%} is not set:
+        set {playerStats::rank::%player's uuid%} to 1
+
+# rewrite to incorportate current prestige as variable
+function RankUpCost(rank: number, prestige: number) :: number:
+    return floor(50 * ({_rank} ^ 2) * ({_prestige} + 1)^2)
+
+command /rankup:
+    trigger:
+        set {_i} to chest inventory with 3 rows named "Rankup Menu" 
+
+        set {_nextRank} to {playerStats::rank::%player's uuid%} + 1
+        set {_nextPrestige} to {playerStats::prestige::%player's uuid%} + 1
+        set {_rankUpCost} to RankUpCost({_nextRank}, {playerStats::prestige::%player's uuid%})
+        set {_prestigeCost} to PrestigeCost({_nextPrestige})
+
+        set slot (integers from 0 to 26) of {_i} to black stained glass pane named " "
+
+        if {playerStats::rank::%player's uuid%} ? 0 < 10:
+            set slot 11 of {_i} to chest named "&d&lRankup" with lore " &7Next Rank: &a%{_nextRank}%", " &7Rankup Cost: &a$%{_rankUpCost} ? 0%", "" and "&dClick to rankup to the next rank!"
+        else:
+            set slot 11 of {_i} to chest named "&d&lRankup" with lore " &7Next Rank: &aMAX", " &7Rankup Cost: &aMAX", "" and "&dYou are already max rank!"
+
+        if {playerStats::prestige::%player's uuid%} ? 0 < 10:
+            set slot 15 of {_i} to ender chest named "&5&lPrestige" with lore " &7Next Prestige: &a%{_nextPrestige}%", " &7Prestige Cost: &a$%{_prestigeCost} ? 0%", "", "&dClick to go to the next prestige!", and "&8> &c&lWARNING: &cAll of your items and generators will reset!"
+        else:
+            set slot 15 of {_i} to ender chest named "&5&lPrestige" with lore " &7Next Prestige: &aMAX", " &7Prestige Cost: &aMAX", "" and "&dYou are already max prestige!"
+
+        open {_i} to player 
+
+on inventory click:
+    if name of event-inventory = "Rankup Menu":
+        cancel event 
+
+        # ranking up
+        if clicked slot = 11:
+            set {_rank} to {playerStats::rank::%player's uuid%}
+            if {_rank} != 10:
+                set {_nextRank} to {_rank} + 1
+                set {_rankUpCost} to RankUpCost({_nextRank}, {playerStats::prestige::%player's uuid%})
+            
+                if player's balance >= {_rankUpCost}:
+                    send formatted "&aYou have ranked up to rank %{_nextRank}%!" to player
+                    send "&c- $%{_rankUpCost} ? 0%"
+                    remove {_rankUpCost} from player's balance
+                    add 1 to {playerStats::rank::%player's uuid%} and {playerStats::maxGenerators::%player's uuid%}
+
+                    execute player command "/rankup" # temporary, rewrite to update GUI properly
+
+                else:
+                    send formatted "&cYou can not afford this rankup! ($%{_rankUpCost} ? 0%)" to player
+                    close inventory of player
+            else:
+                send "&cYou are already max rank and ready to prestige!"
+                close inventory of player
+
+        # handling prestiging
+        if clicked slot = 15:
+            if {playerStats::rank::%player's uuid%} != 10:
+                send "&cYou are not high enough level to prestige!"
+            else if {playerStats::prestige::%player's uuid%} = 10:
+                send "&cYou are already max prestige!"
+            else:
+                set {_nextPrestige} to {playerStats::prestige::%player's uuid%} + 1
+                set {_prestigeCost} to PrestigeCost({_nextPrestige})
+                if player's balance >= {_prestigeCost}:
+                    send formatted "&5&l%player% &7has prestiged to &5&lPrestige %{_nextPrestige}%!" to all players
+                    send "&c- $%{_prestigeCost} ? 0%"
+                    remove {_prestigeCost} from player's balance 
+                    add 1 to {playerStats::prestige::%player's uuid%}
+
+                    # resetting a player's stats
+
+                    set {_u} to player's uuid
+
+                    loop {playerStats::generators::%{_u}%::*}:
+                        set block at loop-value to air 
+                    delete {playerStats::generators::%{_u}%::*}
+
+                    reset player's balance 
+                    set {playerStats::maxGenerators::%{_u}%} and {playerStats::rank::%{_u}%} to 1
+
+                    clear inventory of player 
+                    GiveGenerator(player, 1)
+                    teleport player to {warps::spawn}
+
+                    close inventory of player 
+
+                    resetBlocks({_u})
+
+                    # correctly values displayed in guo
+                    #set {_nextPrestige} to {_nextPrestige} + 1
+                    #set slot 15 of top inventory of player to ender chest named "&5&lPrestige" with lore " &7Next Prestige: &a%{_nextPrestige}%", " &7Prestige Cost: &a$%PrestigeCost({_nextPrestige}) ? 0%", "", "&dClick to go to the next prestige!", and "&8> &c&lWARNING: &cAll of your items and generators will reset!"
+                    #execute player command "/rankup" # temporay
+
+                else:
+                    send "&cYou can not afford this upgrade"
+
+command /reset [<offline player>]:
+    permission: admin.reset 
+    permission message: &cPermission denied! 
+    trigger:
+        if arg-1 is set:   
+            set {_u} to arg-1's uuid 
+            loop {playerStats::generators::%{_u}%::*}:
+                set block at loop-value to air 
+
+            delete {playerStats::generators::%{_u}%::*}
+            delete {playerStats::prestige::%{_u}%}
+            delete {playerStats::balance::%{_u}%}
+            delete {playerStats::health::%{_u}%}
+
+            set {playerStats::maxGenerators::%{_u}%} to 1
+            set {playerStats::rank::%{_u}%} to 1
+
+            set max health of arg-1 to 10
+            clear inventory of arg-1
+
+            delete {playerStats::crateKeys::%{_u}%::*}
+
+            send formatted "&aYou have reset %arg-1%'s stats" to player if arg-1 != player 
+            send "&aYour stats have been reset" to arg-1 if arg-1 is online
+
+            GiveGenerator(arg-1, 1)
+            resetBlocks(uuid of arg-1)
+            teleport arg-1 to {warps::spawn}
+
+            updateScoreboard(arg-1)
+        else:
+            send "&cPlease specify a player to reset "

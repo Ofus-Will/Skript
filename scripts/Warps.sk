@@ -1,0 +1,67 @@
+command /spawn:
+    trigger:
+        set {_loc} to location of block underneath player 
+        loop 3 times:
+            send formatted "&7Teleporting in &a%4-loop-number% seconds..."
+            wait 1 second 
+            if location of block underneath player != {_loc}:
+                send "&cTeleportation cancelled due to movement!"
+                stop 
+        send "&7You have been teleported to &aspawn"
+        teleport player to {warps::spawn}
+
+command /setspawn:
+    permission: admin.setspawn 
+    permission message: &cPermission denied!
+    trigger:
+        set {warps::spawn} to location of player 
+        send formatted "&7You have set the location of &aspawn &7to &a%x-coordinate of player%, %y-coordinate of player%, %z-coordinate of player%"
+
+command /setwarp [<text>]:
+    permission: admin.warps
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is set:
+            set {_warps::*} to all indexes of {warps::*}
+            if arg-1 = "spawn":
+                send "&cThis paramater is reserved!"
+            else if {_warps::*} contains arg-1:
+                send "&cThat warp already exists!"
+            else:
+                set {warps::%arg-1%} to location of block at player
+                send formatted "&7You have set &awarp %arg-1% &7to &a%location of block at player%" to player
+        else:
+            send "&c/setwarp <warp>"
+
+command /delwarp [<text>]:
+    permission: admin.warps
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is set:
+            set {_warps::*} to all indexes of {warps::*}
+            if {_warps::*} contains arg-1:
+                delete {warps::%arg-1%}
+                send formatted "&7You have deleted &awarp %arg-1%" to player 
+            else:
+                send "&cThat warp does not exist!"
+        else:
+            send "&c/delwarp <text>"
+
+command /warp [<text>]:
+    permission: admim.warps 
+    permission message: &cPermission denied!
+    aliases: /warps
+    trigger:
+        set {_warps::*} to all indexes of {warps::*}
+        if {_warps::*} contains arg-1:
+            set {_l} to location of block at player 
+            loop 3 times:
+                send formatted "&7Teleporting you to &awarp %arg-1% &7in &a%4-loop-number% seconds..."
+                wait 1 second 
+                if location of block at player != {_l}:
+                    send "&cTeleportation cancelled due to movement!"
+                    stop 
+            teleport player to {warps::%arg-1%}
+            send "&7You have teleported to &awarp %arg-1%" to player
+        else:
+            send "&7Available warps: &a%{_warps::*}%"

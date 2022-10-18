@@ -1,0 +1,2 @@
+on hunger meter change:
+    cancel event

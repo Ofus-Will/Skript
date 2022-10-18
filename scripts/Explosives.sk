@@ -1,0 +1,69 @@
+on script load:
+    set {explosives::item} to skull of "MHF_TNT" parsed as offline player
+
+    # block tiers
+    set {explosives::blocks::1::*} to white wool 
+    set {explosives::blocks::2::*} to stone and cobblestone 
+    set {explosives::blocks::3::*} to obsidian and diamond ore 
+    
+function GiveExplosive(p: player, tier: number):
+    set {_i} to {explosives::item} named "&c&lTier %{_tier}% Explosive" with lore "&7Place me next to someones base to blow it up!"
+    set {_nbt} to nbt compound of {_i}
+    set byte tag "tag;Explosive" of {_nbt} to 1 
+    set {_i} to item from nbt {_nbt}
+    if {_p} can hold {_i}:
+        give {_i} to {_p}
+    else:
+        drop {_i} at location of {_p}
+
+function explosionEffect(l: location, p: player):
+    play sound "entity.creeper.primed" at volume 10 at {_l} 
+    loop 3 times:
+        send action bar "&c&l%4-loop-number% seconds..." to {_p}
+        play 10 flash at {_l}
+        wait 1 second 
+    send action bar "&a&lBang!" to {_p}
+
+function explosionCaution(p: player):
+    send action bar "&aYou are about to set off an Explosive! Right click to Confirm" to {_p}
+    set metadata value "explosion_confirm" of {_p} to true 
+    wait 5 seconds
+    if (metadata value "explosion_confirm" of {_p}) is set:
+        delete metadata value "explosion_confirm" of {_p}
+        send "&c&lExplosive Uncharged" to {_p}
+
+on right click:
+    if (tag "tag;Explosive" of nbt compound of tool) is set:
+        cancel event 
+        if (metadata value "explosion_confirm" of player) is set:
+            delete metadata value "explosion_confirm" of player 
+            explosionEffect(location of event-block, player)
+            set {_tier::*} to uncoloured name of tool parsed as "Tier %number% Explosive"
+            remove 1 of tool from tool 
+            wait 3 seconds 
+            loop {_tier::1} times:
+                set {_index} to ({_tier::1} + 1) - loop-number 
+                add {explosives::blocks::%{_index}%::*} to {_blocks::*}
+
+            loop all blocks in radius (2 + ceil({_tier::1}/4)) of event-block where [{_blocks::*} contains input]:
+                set {_loc} to location of loop-block 
+                set {_owner} to tag "tag;Owner" of nbt compound of loop-block 
+                if {_owner} is set:
+                    delete {playerStats::placedBlocks::%{_owner}%::%{_loc}%}
+                    set block at loop-block to air
+
+            create a fake explosion at location of event-block
+        else:
+            explosionCaution(player)
+
+command /explosive [<integer>]:
+    permission: admin.explosives 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is set:
+            if arg-1 is between 1 and 10:
+                GiveExplosive(player, arg-1)
+            else:
+                send "&cThat tier of explosive does not exist!"
+        else:
+            send "&c/explosive <tier>"

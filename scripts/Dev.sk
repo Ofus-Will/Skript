@@ -1,0 +1,44 @@
+on script load:
+    loop 100 times:
+        set {values::%loop-value%} to random integer between 1 and 100
+
+options:
+    elementsPerPage: 36
+
+Function MultiPageGUI(p: player, page: number):
+    set {_i} to chest inventory with 6 rows named "Multipage GUI [Page: %{_page}%]"
+
+    set {_start} to 1 + ( ({_page} - 1) * {@elementsPerPage} ) 
+    set {_end} to {_start} + {@elementsPerPage}
+    if {_end} > size of {values::*}:
+        set {_end} to {_end} - difference between {_end} and size of {values::*}
+
+    set {_n} to 0
+    loop integers from {_start} to {_end}:
+        set slot {_n} of {_i} to oak wood floor sign named "Value ##%loop-integer%: %{values::%loop-integer%}%"
+        add 1 to {_n}
+
+    if {_page} > 1:
+        set slot 48 of {_i} to arrow named "Return to page %{_page} - 1%"
+    if size of {values::*} > {_start} + 36:
+        set slot 50 of {_i} to arrow named "Go to page %{_page} + 1%"
+
+    open {_i} to {_p}
+
+command /tmp:
+    trigger:
+        MultiPageGUI(player, 1)
+
+on inventory click:
+    if name of event-inventory contains "Multipage GUI":
+        cancel event 
+        if event-inventory = top inventory of player:
+            set {_name} to name of event-inventory 
+            set {_page::*} to {_name} parsed as "Multipage GUI \[Page\:\ %integer%\]"
+            send name of event-inventory
+            if event-slot is an arrow:
+                if index of event-slot = 48:
+                    MultiPageGUI(player, {_page::1} - 1)
+                else:
+                    MultiPageGUI(player, {_page::1} + 1)
+                    send "YAH"

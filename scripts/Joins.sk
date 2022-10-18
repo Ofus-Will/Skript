@@ -1,0 +1,8 @@
+on join:
+    if player has not played before:
+        set join message to "&2Welcome &a%player% &2to CityGens! &8[&a##%size of all offline players%&8]"
+    else:
+        set join message to "&8[&a&l+&8] &7%player%"
+
+on disconnect:
+    set leave message to "&8[&c&l-&8] &7%player%"

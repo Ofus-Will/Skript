@@ -1,0 +1,43 @@
+command /gmc <offline player=%player%>:
+    permission: admin.gamemode 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is online:
+            set gamemode of arg-1 to creative 
+            send "&7Your gamemode has been set to &acreative" to arg-1 if arg-1 is online 
+            send formatted "&7You have set &a%arg-1%'s gamemode &7to &acreative" to player if arg-1 != player
+        else:
+            send "&cThat player is offline!"
+            
+command /gms <offline player=%player%>:
+    permission: admin.gamemode 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is online:
+            set gamemode of arg-1 to survival 
+            send "&7Your gamemode has been set to &asurvival" to arg-1 if arg-1 is online 
+            send formatted "&7You have set &a%arg-1%'s gamemode &7to &asurvival" to player if arg-1 != player
+        else:
+            send "&cThat player is offline!"
+
+command /gmsp <offline player=%player%>:
+    permission: admin.gamemode 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is online:
+            set gamemode of arg-1 to spectator
+            send "&7Your gamemode has been set to &aspectator" to arg-1 if arg-1 is online 
+            send formatted "&7You have set &a%arg-1%'s gamemode &7to &aspectator" to player if arg-1 != player
+        else:
+            send "&cThat player is offline!"
+
+command /gma <offline player=%player%>:
+    permission: admin.gamemode 
+    permission message: &cPermission denied!
+    trigger:
+        if arg-1 is online:
+            set gamemode of arg-1 to adventure
+            send "&7Your gamemode has been set to &aadventure" to arg-1 if arg-1 is online 
+            send formatted "&7You have set &a%arg-1%'s gamemode &7to &aadventure" to player if arg-1 != player
+        else:
+            send "&cThat player is offline!"

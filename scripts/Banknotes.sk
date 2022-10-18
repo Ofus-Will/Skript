@@ -1,0 +1,28 @@
+command /withdraw [<number>]:
+    trigger:
+        if arg-1 is a number:
+            if arg-1 <= player's balance:
+                set {_i} to paper named "&fBanknote: &a&l$%arg-1%" with lore "&7Right click to redeem me!"
+
+                set {_nbt} to nbt compound of {_i}
+                set tag "tag;Banknote" of {_nbt} to true 
+                set {_i} to item from nbt {_nbt}
+
+                if player can hold {_i}:
+                    remove arg-1 from player's balance
+                    give player {_i}
+                    send "&aSuccessfully withdrew $%arg-1%!"
+                else:
+                    send "&cYou have no room in your inventory!"
+            else:
+                send "&cYou can not afford to withdraw this amount of money"
+        else:
+            send "&c/withdraw <amount>"
+
+on right click:
+    if (tag "tag;Banknote" of nbt compound of tool) is set:
+        set {_name} to uncoloured name of tool 
+        set {_amount} to (last (length of {_name} - 11) characters of {_name}) parsed as number
+        remove 1 of player's tool from player's tool 
+        add {_amount} to player's balance
+        send "&a&l+ $%{_amount}%"

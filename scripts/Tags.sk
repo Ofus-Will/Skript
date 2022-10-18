@@ -1,0 +1,44 @@
+function TagState(u: string, tag: string) :: string:
+    if {playerStats::activeTag::%{_u}%} = {_tag}:
+        return "&aThis is already your active tag!"
+    if {playerStats::tags::%{_u}%::*} contains {_tag}:
+        return "&aClick to activate this tag!"
+    return "&cYou have not unlocked this tag!"
+
+command /tags:
+    trigger:
+        set {_i} to chest inventory with 5 rows named "Tags GUI"
+        set {_u} to uuid of player
+        SetUpPage({_i}, 5)
+        set slot 4 of {_i} to skull of player named "&fActive Tag: %{playerStats::activeTag::%player's uuid%} ? "&a&lNONE"%" with lore "&8> &7Unlocked: &e0/0"
+        set slot 10 of {_i} to nametag named "&fTag: &6&l$$$" with lore "&7Flex your money, purchaseable via /buy", "" and TagState({_u}, "&6&l$$$")
+        set slot 11 of {_i} to nametag named "&fTag: &b&l♚" with lore "&7Win this tag by winning a CityGens event!", "" and TagState({_u}, "&b&l♚")
+        set slot 12 of {_i} to nametag named "&fTag: &d&l✓" with lore "&7Obtained by players who participated in the beta", "" and TagState({_u}, "&d&l✓")
+        set slot 13 of {_i} to nametag named "&fTag: &4&lMASTER" with lore "&7Only available to players who reach", "&7the max prestige and rank possible!", "" and TagState({_u}, "&4&lMASTER")
+        set slot 14 of {_i} to nametag named "&fTag: &b##BESTWW" with lore "&7Best Worldwide, purchaseable via /buy", "" and TagState({_u}, "&b##BESTWW")
+        open {_i} to player 
+
+on inventory click:
+    if name of event-inventory = "Tags GUI":
+        cancel event 
+        if clicked inventory = top inventory of player:
+            if event-slot is a nametag:
+
+                close inventory of player 
+
+                set {_state} to line (size of lore of event-slot) of lore of event-slot 
+
+                # Tag is locked
+                if first 2 characters of {_state} = "&c":
+                    send "", "&c&lYou have not unlocked this tag!" and "&7You can unlock tags by winning events", "&7or by purchasing them via /buy!" and "" to player
+                
+                # Deactivating chat tag
+                else if uncoloured {_state} = "This is already your active tag!":
+                    delete {playerStats::activeTag::%player's uuid%}
+                    send "&cDeactivated your currently active tag!"
+
+                # Setting the tag
+                else if uncoloured {_state} = "Click to activate this tag!":
+                    set {_tinfo::*} to split name of event-slot by " "
+                    set {playerStats::activeTag::%player's uuid%} to {_tinfo::2}
+                    send formatted "&7You have activated the %{_tinfo::2}% &7tag!"

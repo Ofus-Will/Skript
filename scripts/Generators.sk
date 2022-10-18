@@ -1,0 +1,227 @@
+on script load:
+    set {generators::type::1} to white stained glass block
+    set {generators::type::2} to light gray stained glass block
+    set {generators::type::3} to gray stained glass block
+    set {generators::type::4} to cyan stained glass block 
+    set {generators::type::5} to blue stained glass block
+    set {generators::type::6} to pink stained glass block
+    set {generators::type::7} to lime stained glass block
+    set {generators::type::8} to yellow stained glass block
+    set {generators::type::9} to orange stained glass block
+    set {generators::type::10} to red stained glass block
+
+on join:
+    if player has not played before:
+        GiveGenerator(player, 1)
+
+function GiveGenerator(p: player, tier: number):
+    if {_p} is online:
+        set {_i} to {generators::type::%{_tier}%} named "&a&lTier %{_tier}% Generator" with lore "&7Place me down to earn money!" 
+        set {_nbt} to nbt compound of {_i}
+        set int tag "tag;Generator;Tier" of {_nbt} to {_tier}
+        set {_i} to item from nbt {_nbt}
+
+        if {_p} can hold {_i}:
+            give {_i} to {_p}
+        else:
+            drop {_i} at location of {_p}
+    else:
+        send "&cError: the server attempted to give a generator to an offline player" to console
+
+function GeneratorUpgradeCost(tier: number) :: number:
+    return 100 * ({_tier}^3) # REWORK VALUES
+
+function GeneratorSellValue(tier: number) :: number:
+    return (100 * ({_tier}^3) ) / 2 # REWORK VALUES
+
+command /givegenerator <integer=1>:
+    permission: admin.givegenerator
+    trigger:
+        if (integers from 1 to 10) contains arg-1:
+            GiveGenerator(player, arg-1)
+        else:
+            send "&c/givegenerator <1-%size of {generators::type::*}%>"
+
+on place of any stained glass block:
+
+    # checks if the stained glass block is a valid generator via nbt
+    if getItemNBT(tool, "Generator") is set:
+
+        # check player is at least 100 blocks from spawn
+        set {_distance} to (101) if player has permission "generators.bypass" else (distance between {warps::spawn} and event-block)
+        if {_distance} < 100:
+            send "&cYou can not place a generator within 100 blocks of spawn!"
+
+        # if player has maximum amount of generators placed
+        else if {playerStats::generators::%player's uuid%::*} < {playerStats::maxGenerators::%player's uuid%}:
+            send "&cYou already have the maximum amount of generators placed!"
+
+        else:
+
+            set {_loc} to location of event-block 
+            #set {_index} to "%{_loc}%"
+            set {playerStats::generators::%player's uuid%::%{_loc}%} to {_loc}
+
+            # add tier and balance to nbt data of block
+            set {_tier} to int tag "tag;Generator;Tier" of nbt compound of player's tool
+            set int tag "tag;Generator;Tier" of (nbt compound of event-block) to {_tier}
+            set long tag "tag;Generator;Balance" of (nbt compound of event-block) to 0
+
+            send formatted "&7You have placed a &a&lTier %{_tier}% Generator" to player 
+
+on break of any stained glass block:
+    
+    set {_loc} to location of event-block 
+    if {playerStats::generators::%player's uuid%::%{_loc}%} is set:
+        cancel event  
+        send "&cTo break your own generator shift & left click!"
+
+    # handling non-owners breaking the gen
+
+on left click on any stained glass block:
+    if player is sneaking:
+        set {_loc} to location of event-block
+        if {playerStats::generators::%player's uuid%::%{_loc}%} is set:
+            RemoveGenerator({_loc}, player)
+
+function RemoveGenerator(loc: location, p: player):
+    set {_u} to uuid of {_p}
+    set {_tier} to int tag "tag;Generator;Tier" of (nbt compound of block at {_loc})
+    set {_residual} to tag "tag;Generator;Balance" of (nbt compound of block at {_loc})
+    set block at {_loc} to air 
+
+    send formatted "&7You have mined a &a&lTier %{_tier} ? 0% Generator" to {_p}
+    GiveGenerator({_p}, {_tier})
+
+    delete {playerStats::generators::%{_u}%::%{_loc}%}
+
+    # residual balance
+    if {_residual} > 0:
+        add {_residual} to {_p}'s balance 
+        send formatted "&7There was &a&l$%{_residual}% &7lying around in your generator!" to {_p}
+
+on right click on any stained glass block:
+
+    player is not sneaking
+
+    set {_loc} to location of event-block
+    if {playerStats::generators::%player's uuid%::%{_loc}%} is set:
+        if tag "tag;Generator" of nbt compound of event-block is set:
+            cancel event 
+
+            set {_tier} to tag "tag;Generator;Tier" of nbt compound of event-block 
+            set {_balance} to tag "tag;Generator;Balance" of nbt compound of event-block 
+
+            set {_i} to chest inventory with 3 rows named "Generator Menu: Tier %{_tier}%"
+            set slot (integers from 0 to 26) of {_i} to black stained glass pane named " "
+
+            # Generator Tier Upgrade
+            if {playerStats::prestige::%player's uuid%} >= {_tier}:
+                set slot 10 of {_i} to tripwire hook named "&2&lUpgrade Generator &8[&a&lAVAILABLE&8]" with lore " &7Next: &6Tier %{_tier} + 1%", " &7Rate: &6$%({_tier} + 2)^2% every 5 seconds", "" and "&aClick to upgrade this generator to tier %{_tier} + 1%"
+            else:
+                set slot 10 of {_i} to tripwire hook named "&2&lUpgrade Generator &8[&c&lLOCKED&8]" with lore " &7Next: &6Tier %{_tier} + 1%", " &7Rate: &6$%({_tier} + 2)^2% every 5 seconds", "" and "&cThis tier upgrade requires &d&lPrestige %{_tier}%"
+
+            set slot 13 of {_i} to paper named "&2&lCollect Money" with lore " &7Amount available: &6$%{_balance} ? 0%", "" and "&aClick to collect your money!"
+            set slot 16 of {_i} to emerald named "&2&lSell Generator" with lore " &7Worth: &6$%GeneratorSellValue({_tier})%", "" and "&aClick to sell the generator!"
+
+            set metadata value "currentGenerator" of player to event-block 
+
+            open {_i} to player 
+
+
+on inventory click:
+    if name of event-inventory contains "Generator Menu":
+        cancel event 
+
+        # generator upgrades
+        if clicked slot = 10:
+            set {_generator} to metadata value "currentGenerator" of player
+            set {_tier} to int tag "tag;Generator;Tier" of nbt compound of {_generator} 
+
+            if {playerStats::prestige::%player's uuid%} >= {_tier}:
+                add 1 to {_tier}
+                set int tag "tag;Generator;Tier" of nbt compound of {_generator} to {_tier}
+                send "&7You have upgraded this generator to &a&lTier %{_tier}%" to player
+            else:
+                send "&cYou need to be &d&lPrestige %{_tier} + 1% &cto upgrade to this tier!"
+            
+            close inventory of player 
+
+        # generator money 
+        else if clicked slot = 13:
+            set {_generator} to metadata value "currentGenerator" of player
+            set {_line} to line 1 of lore of event-slot 
+            set {_money} to last (length of {_line} - 24) characters of {_line} parsed as number 
+
+            if {_money} > 0:
+                add {_money} to player's balance
+            
+                set tag "tag;Generator;Balance" of (nbt compound of {_generator}) to 0
+                set line 1 of lore of event-slot to " &7Amount available: &6$0"
+                send "&a&l+ $%{_money}%"
+
+                set {_rank} to {playerStats::rank::%player's uuid%}
+                set {_prestige} to {playerStats::prestige::%player's uuid%}
+                #if player's balance >= RankUpCost(({_rank}), ({_prestige})):
+                #    send action bar "&aYou have enough money to rank up! &a&l(/rankup)" to player
+
+        # generator sell
+        else if clicked slot = 16:
+            set {_generator} to metadata value "currentGenerator" of player
+            set {_tier} to tag "tag;Generator;Tier" of (nbt compound of {_generator}) 
+            set {_residual} to tag "tag;Generator;Balance" of (nbt compound of {_generator})
+            set {_worth} to GeneratorSellValue({_tier})
+            set {_loc} to location of {_generator}
+
+            delete {playerStats::generators::%player's uuid%::%{_loc}%}
+
+            # residual balance
+            if {_residual} > 0:
+                add {_residual} to player's balance 
+                send formatted "&7There was &a&l$%{_residual}% &7lying around in your generator!"
+
+            add {_worth} to player's balance
+            send formatted "&a&lGenerator sold! (+$%{_worth}%)" to player
+
+            set block at {_loc} to air 
+
+            close inventory of player 
+
+
+
+on inventory close:
+    if (metadata value "currentGenerator" of player) is set:   
+        delete metadata value "currentGenerator" of player
+
+command /findgenerators:
+    trigger:
+        if size of {playerStats::generators::%player's uuid%::*} > 0:
+            set {_i} to chest inventory with 2 rows named "Generators Locator"
+            set {_n} to 0
+            loop {playerStats::generators::%player's uuid%::*}:
+                set {_tier} to tag "tag;Generator;Tier" of (nbt compound of block at loop-value)
+                set slot {_n} of {_i} to white stained glass block named "&2&lTier %{_tier}% Generator" with lore " &7Location: &a%stringLoc(loop-value)%"
+                add 1 to {_n}
+            open {_i} to player 
+        else:
+            send "&cYou have no generators to locate!"
+
+on inventory click:
+    if name of event-inventory = "Generators Locator":
+        cancel event
+
+every 5 seconds:
+    loop all players:
+        loop {playerStats::generators::%loop-player's uuid%::*}:
+            set {_nbt} to nbt compound of block at loop-value-2
+            set {_tier} to tag "tag;Generator;Tier" of {_nbt}
+            set {_balance} to tag "tag;Generator;Balance" of {_nbt}
+
+            set {_newBalance} to {_balance} + ceil(({_tier} + 1)^1.5) 
+            set tag "tag;Generator;Balance" of {_nbt} to {_newBalance}
+
+            play mobspawner flames at loop-value-2
+
+            # handling inventories that are currently open
+            if name of current inventory of loop-player = "Generator Menu: Tier %{_tier}%":
+                set line 1 of lore of slot 13 of top inventory of loop-player to " &7Amount available: &6$%{_newBalance} ? 0%"

@@ -1,0 +1,40 @@
+function getItemNBT(i: item, tag: string = "") :: object:
+    if {_tag} = "":
+        return nbt compound of {_i}
+    return tag "tag;%{_tag}%" of nbt compound of {_i}
+
+function modifyItemNBT(i: item, tag: string, value: object) :: item:
+    set {_nbt} to nbt compound of {_i}
+    set tag "tag;%{_tag}%" of {_nbt} to {_value}
+    set {_i} to item from nbt {_nbt}
+    return {_i}
+
+function stringLoc(loc: location) :: string:
+    return "x: %x-coordinate of {_loc}%, y: %y-coordinate of {_loc}%, z: %z-coordinate of {_loc}%"
+
+function SetUpPage(inv: inventory, rows: number, nestedPage: boolean = false):
+    set {_lastSlot} to ({_rows} * 9) - 1
+    set slot (integers from 0 to 9) of {_inv} to black stained glass pane named " "
+    loop (integers from 2 to ({_rows} - 1)):
+        set {_curr} to 9 * loop-number 
+        set slot ({_curr} - 1) and {_curr} of {_inv} to black stained glass pane named " "
+    set slot (integers from {_lastSlot} to ({_lastSlot} - 9)) of {_inv} to black stained glass pane named " "
+    if {_nestedPage} = true:
+        set slot {_lastSlot} - 4  of {_inv} to arrow named "&c&lGo Back"
+
+command /clearchat:
+    aliases: /cc
+    permission: admin.clearchat
+    permission message: &cPermission denied!
+    trigger:
+        loop 200 times:
+            send " " to all players 
+        send formatted "&7The chat has been cleared by &3&l%player%!"
+
+function CanPurchase(uuid: string, rank: number, prestige: number) :: string:
+    if {playerStats::prestige::%{_uuid}%} > {_prestige}:
+        return "&aClick to purchase!"
+    else if {playerStats::prestige::%{_uuid}%} ? 0 = {_prestige}:
+        if {playerStats::rank::%{_uuid}%} >= {_rank}:
+            return "&aClick to purchase!"
+    return "&cThis item requires Prestige %{_prestige}%, Rank %{_rank}%"

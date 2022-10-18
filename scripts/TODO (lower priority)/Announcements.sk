@@ -1,0 +1,24 @@
+on script load:
+    set {announcements::text::1} to "&eThis a test tip!"
+    set {announcements::text::2} to "&eSo is this 1!"
+    set {announcements::text::3} to "&eAnd This one too!"
+    if {announcements::enabled} is not set:
+        set {announcements::enabled} to true 
+
+options:
+    test: 5 minutes
+
+command /announcements:
+    trigger:
+        if {announcements::enabled} is set:
+            set {announcements::enabled} to false
+            send "&cYou have disabled automatic announcements!"
+        else:
+            set {announcements::enabled} to true 
+            send "&aYou have enabled automatic announcements!"
+
+every {@test} in "world":
+    if {announcements::enabled} = true:
+        set {_text} to random element out of {announcements::text::*} where [input != {announcements::last}]
+        set {announcements::last} to {_text}
+        send {_text} to all players

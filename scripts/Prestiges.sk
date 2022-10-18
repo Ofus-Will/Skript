@@ -1,0 +1,58 @@
+on script load:
+    set {prestigeRewards::1::*} to barrier named "&d&lPRESTIGE 1 REWARDS PLACEHOLDER"
+    set {prestigeRewards::2::*} to barrier named "&d&lPRESTIGE 2 REWARDS PLACEHOLDER"
+    set {prestigeRewards::3::*} to barrier named "&d&lPRESTIGE 3 REWARDS PLACEHOLDER"
+    set {prestigeRewards::4::*} to barrier named "&d&lPRESTIGE 4 REWARDS PLACEHOLDER"
+    set {prestigeRewards::5::*} to barrier named "&d&lPRESTIGE 5 REWARDS PLACEHOLDER"
+    set {prestigeRewards::6::*} to barrier named "&d&lPRESTIGE 6 REWARDS PLACEHOLDER"
+    set {prestigeRewards::7::*} to barrier named "&d&lPRESTIGE 7 REWARDS PLACEHOLDER"
+    set {prestigeRewards::8::*} to barrier named "&d&lPRESTIGE 8 REWARDS PLACEHOLDER"
+    set {prestigeRewards::9::*} to barrier named "&d&lPRESTIGE 9 REWARDS PLACEHOLDER"
+    set {prestigeRewards::10::*} to barrier named "&d&lPRESTIGE 10 REWARDS PLACEHOLDER"
+
+# rewrite for expotential formula
+function PrestigeCost(prestige: number) :: number:
+    return 10000 * {_prestige}^2
+
+command /prestigerewards:
+    trigger:
+        set {_i} to chest inventory with 3 rows named "Prestige Menu"
+        set slot (integers from 0 to 26) of {_i} to black stained glass pane named " "
+        set slot 11 of {_i} to nether star named "&5&lView Prestige Rewards" with lore " &7View all of the item rewards you get for" and " &7reaching a new prestige level"
+        set slot 15 of {_i} to chest named "&5&lCollect Prestige Rewards" with lore " &7Redeem all of your prestige rewards!"
+        open {_i} to player 
+
+on inventory click:
+    if name of event-inventory = "Prestige Menu":
+        cancel event 
+        if clicked slot = 11:
+            set {_i} to chest inventory with 4 rows named "Prestige Rewards"
+            set slot (integers from 0 to 8), 10, 17, 19 and (integers from 26 to 35) of {_i} to black stained glass pane named " "
+            loop ((integers from 11 to 16) and (integers from 20 to 25)):
+                exit loop if {_n} ? 0 >= 10
+                add 1 to {_n}
+                set {_slot} to loop-value 
+                set slot {_slot} of {_i} to ender chest named "&5&lPrestige %{_n}%" with lore " &7Cost: &6$%PrestigeCost({_n})%", "" and "&dClick to view the rewards for &5&lPRESTIGE %{_n}%"
+            set slot 9 of {_i} to arrow named "&c&lGo Back"
+            set slot 18 of {_i} to arrow named "&c&lGo Back"
+            open {_i} to player 
+        else if clicked slot = 15:
+            send "&cComing soon..."
+    else if name of event-inventory = "Prestige Rewards":
+        cancel event
+        if event-slot != black stained glass pane, arrow or air:
+            set {_prestige::*} to uncoloured name of event-slot parsed as "Prestige %number%"
+            set {_i} to chest inventory with 3 rows named "Prestige Rewards: &dPrestige %{_prestige::1}%"
+            set slot (integers from 0 to 26) of {_i} to black stained glass pane named " "
+            set slot (integers from 11 to 16) of {_i} to air
+            set {_n} to 11
+            loop {prestigeRewards::%{_prestige::1}%::*}:
+                set slot {_n} of {_i} to loop-value 
+                add 1 to {_n}
+            set slot 9 of {_i} to arrow named "&c&lGo Back"
+            open {_i} to player
+    
+    if name of event-inventory contains "Prestige Rewards":
+        cancel event 
+        if name of event-slot = "&c&lGo Back":
+            execute player command "/prestigerewards"

@@ -1,0 +1,4 @@
+on join:
+    set tablist header of player to "%nl%&2&lCashopolis &8| &aSeason 1%nl%"
+    set tablist footer of player to "%nl%&2Discord: &asoon%nl%&2Store: &asoon%nl%"
+    set player's tablist name to "&3&l%player's prefix in uppercase% &7%player%"

@@ -1,0 +1,48 @@
+command /bounty [<offline player>] [<number>]:
+    trigger:
+        set {_p} to arg-1 
+        if {_p} is not an offline player:
+            send "&cThat player does not exist!"
+        else if arg-1 != player:
+            send "&cYou can not put a bounty on yourself!"
+        else if {_p} is offline:
+            send "&cThat player is not online!"
+        else if arg-2 is not a number:
+            send "&c/bounty <player> <amount>"
+        else if player's balance < arg-2:
+            send "&cYou do not have enough money!"
+        else:
+            remove arg-2 from player's balance
+            send formatted "&7You have set a &a&l$%arg-2% &7bounty on &a&l%arg-1%" to player 
+            send formatted "&a&l%player% &7has set a &a&l$%arg-2% &7bounty on you!" to arg-1
+            add "%arg-1%-%arg-2%-%player%" to {bounties::*}
+
+command /bounties:
+    trigger:
+        if {bounties::*} is set:
+            set {_i} to chest inventory with 6 rows named "Bounties Menu"
+            set {_n} to 0
+            loop {bounties::*}:
+                set {_info::*} to split loop-value by "-"
+                set slot {_n} of {_i} to player head named "&6Target: &e%{_info::1}%" with lore "&8> &7Set by: &a%{_info::3}%" and "&8> &7Amount: &a$%{_info::2}%"
+                add 1 to {_n}
+            open {_i} to player
+        else:
+            send "&cThere are not currently any active bounties! Put a bounty on someone's head via /bounty"
+
+on inventory click:
+    if name of event-inventory = "Bounties Menu":
+        cancel event
+
+on death of player:
+    attacker != victim
+    set {_p} to "%victim%"
+    loop {bounties::*}:
+        set {_info::*} to split loop-value by "-"
+        if {_info::1} = {_p}:
+            set {_amount} to {_info::2} parsed as number 
+            if {_amount} > 500:
+                send formatted "&a%attacker% &7has claimed &a%victim%'s bounty &7and received &a$%{_info::2}%" to all players
+            else:
+                send formatted "&7You have claimed &a%victim%'s bounty &7and received &a$%{_info::2}%" to attacker
+        

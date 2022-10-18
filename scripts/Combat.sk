@@ -1,0 +1,118 @@
+#TODO
+
+function combatTag(p: player):
+    if {combatTag::%{_p}%} is set:
+        set {combatTag::%{_p}%} to 10
+    else:
+        set {combatTag::%{_p}%} to 10 
+        send "&cYou have engaged in combat, please don't log out!" to {_p}
+        while {combatTag::%{_p}%} is set:
+            send action bar "&cCombat: %{combatTag::%{_p}%}% seconds" to {_p}
+            wait 1 second 
+            remove 1 from {combatTag::%{_p}%}
+            if {combatTag::%{_p}%} = 0:
+                delete {combatTag::%{_p}%}
+        send "&aYou are no longer in combat!" to {_p}
+        send action bar "" to {_p}
+
+on damage of player:
+    attacker is a player 
+    victim != attacker 
+    event is not cancelled
+    combatTag(attacker)
+    combatTag(victim)
+
+on disconnect:
+    if {combatTag::%player%} is set:
+
+on disconnect:
+    if {combatTag::%player%} is set:
+        # spawning npc to represent player 
+        spawn villager at event-location with nbt "{NoAI:1,VillagerData:{profession:Unemployed,level:1,type:plains},Silent:1}"
+        set {_v} to last spawned villager 
+        set name of {_v} to "&cGhost of %player%"
+        set metadata value "logger" of {_v} to player 
+
+        set {playerStats::combatLogItems::%player's uuid%::*} to (all items in inventory of player)
+
+on death of villager:
+    attacker is a player 
+    set {_logger} to metadata value "logger" of victim
+    {_logger} is set
+
+    set {_u} to uuid of {_logger}
+
+    # handling money from kill
+    if attacker is a player:
+        set {_reward} to floor(balance of {_logger}/20) # 5% of their balance
+        if {_reward} > 0:
+            remove {_reward} from balance of {_logger}
+            set {playerStats::combatLogMoney::%{_u}%} to {_reward}
+            add {_reward} to balance of attacker 
+            send formatted "&7Kaching! &a$%{_reward}% &7was found in &a%{_logger}%'s wallet" to attacker
+        else:
+            send formatted "&7No money was found in &a%{_logger}%'s wallet!" to attacker
+
+    # handling items 
+    drop {playerStats::combatLogItems::%{_u}%::*} at event-location
+
+on right click on villager:
+    if metadata value "logger" of clicked entity is set:
+        cancel event
+
+on join:
+    if {playerStats::combatLogItems::%player's uuid%::*} is set:
+        set {_villager} to first element out of (all villagers where [metadata value "logger" of input = player])
+        if {_villager} is set:
+            kill {_villager}
+            delete {playerStats::combatLogItems::%player's uuid%::*}
+        else:
+            teleport player to {warps::spawn}
+            send "&c&lDEATH: &cYou logged out during combat and lost $%{playerStats::combatLogMoney::%player's uuid%}%" to player
+            remove {playerStats::combatLogItems::%player's uuid%::*} from inventory of player 
+            delete {playerStats::combatLogItems::%player's uuid%::*} and {playerStats::combatLogMoney::%player's uuid%}
+
+on death of player:
+    clear drops 
+    set {playerStats::deathItems::%victim's uuid%::*} to all items in inventory of victim 
+    set {_toDrop::*} to {playerStats::deathItems::%victim's uuid%::*} where [{combatLogItems::*} contains input]
+    remove {_toDrop::*} from {playerStats::deathItems::%victim's uuid%::*} 
+    drop {_toDrop::*} at event-location
+    if attacker is a player:
+        set {_u} to uuid of victim 
+        set {_reward} to floor(balance of victim/20) # 5% of their balance
+        if {_reward} > 0:
+            remove {_reward} from balance of victim 
+            add {_reward} to balance of attacker 
+            send formatted "&7Kaching! &a$%{_reward}% &7was found in &a%victim%'s wallet" to attacker
+        else:
+            send formatted "&7No money was found in &a%victim%'s wallet!" to attacker
+    force victim to respawn 
+    delete {combatTag::%victim%} 
+
+on respawn:
+    if {playerStats::deathItems::%player's uuid%::*} is set:
+        give {playerStats::deathItems::%player's uuid%::*} to player 
+        delete {playerStats::deathItems::%player's uuid%::*} 
+
+# player kills and deaths
+on death of player:
+    add 1 to {playerStats::deaths::%victim's uuid%}
+    if attacker is a player:
+        add 1 to {playerStats::kills::%attacker's uuid%}
+        set death message to "&c%victim% &7was slain by &c%attacker%"
+    else if "%damage cause%" = "fall":
+        set death message to "&c%victim% &7fell to their death!"
+    else:
+        set death message to "&c%victim% &7was slain by &cmagic!"
+
+on damage of player:
+    if "%damage cause%" = "fall":
+        set damage to damage * 0.7
+
+on damage of player:
+    if distance between {warps::spawn} and location of victim <= 50:
+        cancel event 
+        if attacker is a player:
+            attacker != victim
+            send "&cYou can not attack players that are less than 50 blocks away from spawn!" to attacker
